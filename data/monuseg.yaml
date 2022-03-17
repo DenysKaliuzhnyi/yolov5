@@ -1,0 +1,7 @@
+path: ../datasets/monuseg_yolov5  # dataset root dir
+train: images/train
+val: images/val
+test: images/test
+
+nc: 1  # number of classes
+names: ['nuclei']
