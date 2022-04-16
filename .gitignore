@@ -1,3 +1,9 @@
+# My GitIgnore
+slurm-out/
+tutorial.ipynb
+artifacts/
+data/
+
 # Repo-specific GitIgnore ----------------------------------------------------------------------------------------------
 *.jpg
 *.jpeg

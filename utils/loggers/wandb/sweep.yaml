@@ -23,11 +23,19 @@ metric:
 parameters:
   # hyperparameters: set either min, max range or values list
   data:
-    value: "data/coco128.yaml"
+    value: "data/MoNuSeg_train2021_yolov5.yaml"
   batch_size:
     values: [64]
   epochs:
     values: [10]
+  img:
+    values: [512]
+  workers:
+    values: [4]
+  weights:
+    values: ["yolov5s.pt"]
+  optimizer:
+    values: ["AdamW"]
 
   lr0:
     distribution: uniform

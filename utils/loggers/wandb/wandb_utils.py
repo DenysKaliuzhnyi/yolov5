@@ -422,7 +422,9 @@ class WandbLogger():
                 cls = int(cls)
                 box_data.append({"position": {"middle": [xywh[0], xywh[1]], "width": xywh[2], "height": xywh[3]},
                                  "class_id": cls,
-                                 "box_caption": "%s" % (class_to_id[cls])})
+                                 "box_caption": "",
+                                 # "box_caption": "%s" % (class_to_id[cls])
+                                 })
                 img_classes[cls] = class_to_id[cls]
             boxes = {"ground_truth": {"box_data": box_data, "class_labels": class_to_id}}  # inference-space
             table.add_data(si, wandb.Image(paths, classes=class_set, boxes=boxes), list(img_classes.values()),
@@ -449,7 +451,8 @@ class WandbLogger():
                 box_data.append(
                     {"position": {"minX": xyxy[0], "minY": xyxy[1], "maxX": xyxy[2], "maxY": xyxy[3]},
                      "class_id": cls,
-                     "box_caption": f"{names[cls]} {conf:.3f}",
+                     "box_caption": "",
+                     # "box_caption": f"{names[cls]} {conf:.3f}",
                      "scores": {"class_score": conf},
                      "domain": "pixel"})
                 avg_conf_per_class[cls] += conf
@@ -487,7 +490,8 @@ class WandbLogger():
             if self.current_epoch % self.bbox_interval == 0:
                 box_data = [{"position": {"minX": xyxy[0], "minY": xyxy[1], "maxX": xyxy[2], "maxY": xyxy[3]},
                              "class_id": int(cls),
-                             "box_caption": f"{names[int(cls)]} {conf:.3f}",
+                             "box_caption": "",
+                             # "box_caption": f"{names[int(cls)]} {conf:.3f}",
                              "scores": {"class_score": conf},
                              "domain": "pixel"} for *xyxy, conf, cls in pred.tolist()]
                 boxes = {"predictions": {"box_data": box_data, "class_labels": names}}  # inference-space

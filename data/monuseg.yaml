@@ -1,4 +1,8 @@
-path: ../datasets/monuseg_yolov5  # dataset root dir
+# Template for a data file for trabibg YOLOv5
+# For each dataset it will be propagated to `data` folder in YOLOv5 model root directory
+# Expressions in `<>` are variables to be substituted
+
+path: ../datasets/monuseg   # dataset root dir
 train: images/train
 val: images/val
 test: images/test
