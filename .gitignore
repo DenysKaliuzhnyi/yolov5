@@ -3,6 +3,7 @@ slurm-out/
 tutorial.ipynb
 artifacts/
 data/
+env_no_wandb/
 
 # Repo-specific GitIgnore ----------------------------------------------------------------------------------------------
 *.jpg

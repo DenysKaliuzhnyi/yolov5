@@ -8,9 +8,9 @@
 #SBATCH --cpus-per-task=8
 
 # The maximum walltime of the job
-#SBATCH -t 03:00:00
+#SBATCH -t 3-00:00:00
 
-#SBATCH --mem=10G
+#SBATCH --mem=20G
 
 # Keep this line if you need a GPU for your job
 #SBATCH --partition=gpu
@@ -28,20 +28,46 @@ SEED=$3  # not required
 IMG_PCNT=$4  # not required
 ANN_PCNT=$5  # not required
 
-
 # Load Python
 module load any/python/3.8.3-conda
 
 # Activate your environment
 source env/bin/activate
 
-python train.py --img 512 --batch 64 --workers 4 \
+#wandb offline
+#wandb online
+#                --evolve 300 \
+#                --hyp data/hyps/hyp.scratch-med.yaml \
+#                --hyp runs/evolve/MoNuSeg_train2021_yolov5/exp_2022-04-19_17:31:27_train_hyp_med_default_full_evolve300_10_4/hyp_evolve.yaml \
+#                --hyp runs/evolve/MoNuSeg_train2021_yolov5/exp_2022-04-22_00:04:12_evolve_gen100_epoch100/hyp_evolve.yaml \
+#                --upload_data val \
+
+python train.py --img 512 \
+                --batch 32 \
+                --workers 4 \
                 --epochs 300 \
-                --hyp hyp_med.yaml --weights yolov5s.pt \
-                --optimizer AdamW --image-weights \
+                --patience 0 \
+                --image-weights \
+                --cos-lr \
+                --optimizer SGD \
                 --bbox_interval 10 \
+                --weights yolov5s.pt \
+                --hyp data/hyps/hyp.scratch-med.yaml \
                 --data "$DATA_FILE_PATH" --name "$EXP_PATH" \
     	 	        --seed "$SEED" --images-percent "$IMG_PCNT" --annotations-percent "$ANN_PCNT"
+
+#echo "Sync runs with W&B"
+#wandb sync wandb/latest-run
+
+#source env_no_wandb/bin/activate
+#python train.py --img 512 --batch 32 --workers 8 \
+#                --epochs 100 \
+#                --evolve 300 \
+#                --hyp data/hyps/hyp.scratch-med.yaml \
+#                --weights yolov5s.pt \
+#                --optimizer AdamW --image-weights \
+#                --data "$DATA_FILE_PATH" --name "$EXP_PATH" \
+#    	 	        --seed "$SEED" --images-percent "$IMG_PCNT" --annotations-percent "$ANN_PCNT"
 # --upload_dataset have a bug - don't work
 
 echo "DONE"

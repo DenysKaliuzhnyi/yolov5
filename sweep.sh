@@ -8,9 +8,9 @@
 #SBATCH --cpus-per-task=8
 
 # The maximum walltime of the job
-#SBATCH -t 03:00:00
+#SBATCH -t 3-00:00:00
 
-#SBATCH --mem=10G
+#SBATCH --mem=20G
 
 # Keep this line if you need a GPU for your job
 #SBATCH --partition=gpu
@@ -29,6 +29,6 @@ module load any/python/3.8.3-conda
 source env/bin/activate
 
 # start agent
-wandb agent --project YOLOv5 --entity kaliuzhnyi --count 100 "$SWEEP_ID"
+wandb agent --project YOLOv5 --entity kaliuzhnyi --count 110 "$SWEEP_ID"
 
 echo "DONE"

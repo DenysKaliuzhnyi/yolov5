@@ -38,7 +38,7 @@ source env/bin/activate
 python detect.py --img 512 \
                  --line-thickness 1 \
                  --hide-labels --hide-conf \
-                 --visualize \
+                 --save-txt --save-conf \
                  --data "$DATA_FILE_PATH" --name "$EXP_PATH" --source "$IMAGES_PATH" \
                  --weights "$PROJECT_HISTOPATHOLOGY_DIR/yolov5/runs/train/$EXP_PATH/weights/best.pt"
 
