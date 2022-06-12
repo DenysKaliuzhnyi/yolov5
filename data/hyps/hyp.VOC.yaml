@@ -23,9 +23,9 @@ obj: 0.50843
 obj_pw: 0.6729
 iou_t: 0.2
 anchor_t: 3.4172
-fl_gamma: 1.5  # focal loss gamma (efficientDet default gamma=1.5) (only for object loss)
-fl_alpha: 0.25  # focal loss alpha (only for object loss)
-fl_mirror_threshold: 0  # focal loss mirror threshold (only for object loss)
+fl_gamma: 0  # focal loss gamma (efficientDet default gamma=1.5) (only for object loss)
+fl_alpha: 0  # focal loss alpha (only for object loss)
+quantile_threshold: 0.2  # focal loss mirror threshold (only for object loss)
 hsv_h: 0.01032
 hsv_s: 0.5562
 hsv_v: 0.28255
