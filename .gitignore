@@ -4,6 +4,7 @@ tutorial.ipynb
 artifacts/
 data/
 env_no_wandb/
+env_selective_iou/
 
 # Repo-specific GitIgnore ----------------------------------------------------------------------------------------------
 *.jpg
