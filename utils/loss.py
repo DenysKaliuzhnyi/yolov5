@@ -92,6 +92,47 @@ class TolerantFocalLoss(nn.Module):
             return loss
 
 
+class MirrorFocalLoss(nn.Module):
+    # Wraps focal loss around existing loss_fcn(), i.e. criteria = MirrorFocalLoss(nn.BCEWithLogitsLoss(), gamma=1.5)
+    def __init__(self, loss_fcn, gamma: float = 1.5, alpha: float = 0.25, mirror_threshold: float = 0.0):
+        super().__init__()
+        assert 0 <= mirror_threshold <= 1
+        assert isinstance(loss_fcn, nn.BCEWithLogitsLoss)
+        self.loss_fcn = loss_fcn  # must be nn.BCEWithLogitsLoss()
+        self.gamma = gamma
+        self.alpha = alpha
+        self.mirror_threshold = mirror_threshold
+        self.reduction = loss_fcn.reduction
+        self.loss_fcn.reduction = 'none'  # required to apply FL to each element
+
+    def forward(self, pred, true):
+        pred_prob = torch.sigmoid(pred)  # prob from logits
+        p_t = true * pred_prob + (1 - true) * (1 - pred_prob)
+        modulating_factor = (1.0 - p_t) ** self.gamma
+
+        if 0 < self.mirror_threshold < 1:
+            # invert labels for objects with high predicted probability and missing from annotation
+            mask = ((pred_prob > (1 - self.mirror_threshold)) * (1 - true)).detach().float()
+            true = true * (1 - mask) + (1 - true) * mask
+            # true = true + mask
+            modulating_factor = modulating_factor * (1 - mask) + p_t ** self.gamma * mask
+
+        loss = self.loss_fcn(pred, true)
+        loss *= modulating_factor
+
+        if 0 < self.alpha < 1:
+            # calculate alpha after inverting labels
+            alpha_factor = true * self.alpha + (1 - true) * (1 - self.alpha)
+            loss *= alpha_factor
+
+        if self.reduction == 'mean':
+            return loss.mean()
+        elif self.reduction == 'sum':
+            return loss.sum()
+        else:  # 'none'
+            return loss
+
+
 class QFocalLoss(nn.Module):
     # Wraps Quality focal loss around existing loss_fcn(), i.e. criteria = FocalLoss(nn.BCEWithLogitsLoss(), gamma=1.5)
     def __init__(self, loss_fcn, gamma=1.5, alpha=0.25):
@@ -127,15 +168,16 @@ class ComputeLoss:
 
         # Define criteria
         BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], device=device))
-        BCEobj = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device))
+        BCEobj = MirrorFocalLoss(nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device)),
+                                 gamma=h['fl_gamma'], alpha=h['fl_alpha'], mirror_threshold=h['fl_mirror_threshold'])
 
         # Class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
         self.cp, self.cn = smooth_BCE(eps=h.get('label_smoothing', 0.0))  # positive, negative BCE targets
 
         # Focal loss
-        g = h['fl_gamma']  # focal loss gamma
-        if g > 0:
-            BCEcls, BCEobj = FocalLoss(BCEcls, g), FocalLoss(BCEobj, g)
+        # g = h['fl_gamma']  # focal loss gamma
+        # if g > 0:
+        #     BCEcls, BCEobj = FocalLoss(BCEcls, g), FocalLoss(BCEobj, g)
 
         det = de_parallel(model).model[-1]  # Detect() module
         self.balance = {3: [4.0, 1.0, 0.4]}.get(det.nl, [4.0, 1.0, 0.25, 0.06, 0.02])  # P3-P7
