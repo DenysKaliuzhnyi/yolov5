@@ -319,9 +319,9 @@ class LoadWSI:
         crop_point = self.lookup_crops[slide_idx][crop_idx]
 
         crop0 = slide.read_region(location=crop_point, level=self.level, size=self.crop_size)  # RGBA
-        crop0 = np.array(crop0)[..., :3]
+        crop0 = np.array(crop0)[..., :3]  # RGB
         crop = letterbox(crop0, self.crop_size, stride=self.stride, auto=self.auto)[0]
-        crop = crop.transpose((2, 0, 1))
+        crop = crop.transpose((2, 0, 1))  #CHW
         crop = np.ascontiguousarray(crop)
 
         path = self.file_paths[slide_idx]
@@ -331,7 +331,8 @@ class LoadWSI:
 
         self.count += 1
 
-        return path, crop, crop0, None, s
+        # crop0 will be used to save the image, make it BGR for opencv compatible
+        return path, crop, crop0[..., ::-1], None, s
 
     def unravel_index(self, idx):
         """

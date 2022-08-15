@@ -53,15 +53,15 @@ conda activate env_wsi
 which python
 
 python detect.py --img 1024 \
-                 --nosave \
                  --agnostic-nms \
-                 --line-thickness 1 \
+                 --line-thickness 3 \
                  --conf-thres $CONF_TH \
                  --iou-thres $IUO_TH \
-                 --hide-labels --hide-conf \
+                 --hide-conf \
                  --save-txt --save-conf \
                  --source "$IMAGES_PATH" \
                  --name "$EXP_PATH/wsi/$DET_EXP_NAME" \
-                 --weights "$PROJECT_HISTOPATHOLOGY_DIR/yolov5/runs/train/$EXP_PATH/weights/best.pt"
+                 --weights "$PROJECT_HISTOPATHOLOGY_DIR/yolov5/runs/train/$EXP_PATH/weights/best.pt" \
+                 --dataloader-type WSI
 
 echo "DONE"
