@@ -31,6 +31,11 @@ from utils.general import (DATASETS_DIR, LOGGER, NUM_THREADS, check_dataset, che
                            segments2boxes, xyn2xy, xywh2xyxy, xywhn2xyxy, xyxy2xywhn)
 from utils.torch_utils import torch_distributed_zero_first
 
+try:
+    from openslide import OpenSlide
+except ImportError:
+    print('cannot import openslide module')
+    
 # Parameters
 HELP_URL = 'https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data'
 IMG_FORMATS = ['bmp', 'dng', 'jpeg', 'jpg', 'mpo', 'png', 'tif', 'tiff', 'webp']  # include image suffixes
@@ -236,6 +241,131 @@ class LoadImages:
 
     def __len__(self):
         return self.nf  # number of files
+
+
+def is_useful_tile(tile):
+    tile = np.array(tile)
+    is_meaningful_pix = (tile > 30) & (tile < 225)
+    return is_meaningful_pix.mean() > 0.05
+
+
+def crop_slide_by_grid(
+        slide: OpenSlide,
+        level: int,
+        size: tuple,
+        overlap: float
+):
+    crop_points = []
+
+    tile_size_x, tile_size_y = size
+    full_size_x, full_size_y = slide.level_dimensions[level]
+    stride_x = int(tile_size_x * (1 - overlap))
+    stride_y = int(tile_size_y * (1 - overlap))
+    n_x = (full_size_x - tile_size_x) // stride_x + 1
+    n_y = (full_size_y - tile_size_y) // stride_y + 1
+
+    estimated_number = n_x * n_y
+    d = int(np.ceil(np.log10(estimated_number)))
+
+    for i in range(n_x):
+        print(f'{i}/{n_x}', end='\r')
+        for j in range(n_y):
+            top_left = (i * stride_x * 2 ** level, j * stride_y * 2 ** level)
+            tile = slide.read_region(
+                location=top_left,
+                level=level,
+                size=size
+            )
+            tile.thumbnail((32, 32))
+            if is_useful_tile(tile):
+                crop_points.append(top_left)
+    return crop_points
+
+
+class LoadWSI:
+    def __init__(self, path, crop_size=(1024, 1024), stride=32, auto=True, level=0):
+        p = str(Path(path).resolve())  # os-agnostic absolute path
+        if '*' in p:
+            file_paths = sorted(glob.glob(p, recursive=True))  # glob
+        elif os.path.isdir(p):
+            file_paths = sorted(glob.glob(os.path.join(p, '*.*')))  # dir
+        elif os.path.isfile(p):
+            file_paths = [p]  # files
+        else:
+            raise Exception(f'ERROR: {p} does not exist')
+
+        self.file_paths = file_paths
+        self.crop_size = crop_size
+        self.stride = stride
+        self.ns = len(file_paths)
+        self.auto = auto
+        self.level = level
+        self.mode = 'image'
+        assert self.ns > 0, f'No images or videos found in {p}. ' \
+                            f'Supported formats are:\nimages: {IMG_FORMATS}\nvideos: {VID_FORMATS}'
+        self.precompute_crops()
+
+    def __iter__(self):
+        self.count = 0
+        return self
+
+    def __next__(self):
+        if self.count == self.ni:
+            raise StopIteration
+
+        slide_idx, crop_idx = self.unravel_index(self.count)
+
+        slide = self.lookup_wsi[slide_idx]
+        crop_point = self.lookup_crops[slide_idx][crop_idx]
+
+        crop0 = slide.read_region(location=crop_point, level=self.level, size=self.crop_size)  # RGBA
+        crop0 = np.array(crop0)[..., :3]
+        crop = letterbox(crop0, self.crop_size, stride=self.stride, auto=self.auto)[0]
+        crop = crop.transpose((2, 0, 1))
+        crop = np.ascontiguousarray(crop)
+
+        path = self.file_paths[slide_idx]
+        assert path.endswith('.mrxs')
+        path = f'{path[:-5]}_x={crop_point[0]}_y={crop_point[1]}.png'
+        s = f'image {self.count}/{self.ni} {path}: '
+
+        self.count += 1
+
+        return path, crop, crop0, None, s
+
+    def unravel_index(self, idx):
+        """
+        computes slide index and crop index within slide based on flat index
+        """
+        slide_idx = self.find_slide_index(idx)
+        crop_idx = idx - self.wsi_idx_bins[slide_idx]
+        return slide_idx, crop_idx
+
+    def find_slide_index(self, idx):
+        """
+        finds slide index based on flat index
+        """
+        for slide_idx, b in enumerate(self.wsi_idx_bins):
+            if idx < b:
+                return slide_idx - 1
+        raise ValueError(f'Invalid index {idx} for bins {self.wsi_idx_bins}')
+
+    def precompute_crops(self):
+        self.lookup_wsi = []  # slide index to slide object mapping
+        self.lookup_crops = []  # slide index to list of crop points mapping
+        self.wsi_idx_bins = [0]  # cumulative crop count across slides
+
+        for i, path in enumerate(self.file_paths):
+            slide = OpenSlide(path)
+            crop_points = crop_slide_by_grid(slide, level=self.level, size=self.crop_size, overlap=0)
+
+            b = self.wsi_idx_bins[-1] + len(crop_points)
+            self.wsi_idx_bins.append(b)
+
+            self.lookup_wsi.append(slide)
+            self.lookup_crops.append(crop_points)
+
+        self.ni = self.wsi_idx_bins[-1]
 
 
 class LoadWebcam:  # for inference
