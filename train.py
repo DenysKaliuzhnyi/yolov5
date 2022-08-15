@@ -493,9 +493,9 @@ def parse_opt(known=False):
     parser.add_argument('--artifact_alias', type=str, default='latest', help='W&B: Version of dataset artifact to use')
 
     # parameters that do not affect training, just to pass them to W&B config
-    parser.add_argument('--seed', type=int, help='just to pass to W&B config')
-    parser.add_argument('--images-percent', type=int, help='just to pass to W&B config')
-    parser.add_argument('--annotations-percent', type=int, help='just to pass to W&B config')
+    parser.add_argument('--seed', type=int, default=-1, help='just to pass to W&B config')
+    parser.add_argument('--images-percent', type=int, default=100, help='just to pass to W&B config')
+    parser.add_argument('--annotations-percent', type=int, default=100, help='just to pass to W&B config')
 
     opt = parser.parse_known_args()[0] if known else parser.parse_args()
     return opt

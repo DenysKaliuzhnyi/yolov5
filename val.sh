@@ -24,6 +24,13 @@ DATA_FILE_PATH=$1  # required
 [ -z "$DATA_FILE_PATH" ] && exit 1
 EXP_PATH=$2
 [ -z "$EXP_PATH" ] && EXP_PATH="exp"
+TASK=$3
+[ -z "$TASK" ] && TASK="val"
+VAL_EXP_NAME=$4
+[ -z "$VAL_EXP_NAME" ] && VAL_EXP_NAME="exp"
+IUO_TH=$5
+[ -z "$IUO_TH" ] && IUO_TH=0.45
+
 
 
 # Load Python
@@ -32,9 +39,12 @@ module load any/python/3.8.3-conda
 # Activate your environment
 source env/bin/activate
 
-python val.py --img 512 --batch-size 64 --workers 4 \
-              --task val \
-              --data "$DATA_FILE_PATH" --name "$EXP_PATH" \
+# --iou-thres
+# ann 10%: iou 20%
+python val.py --img 1024 --batch-size 32 --workers 4 \
+              --task "$TASK" \
+              --iou-thres "$IUO_TH" \
+              --data "$DATA_FILE_PATH" --name "$EXP_PATH/$TASK/$VAL_EXP_NAME" \
               --weights "$PROJECT_HISTOPATHOLOGY_DIR/yolov5/runs/train/$EXP_PATH/weights/best.pt"
 
 echo "DONE"

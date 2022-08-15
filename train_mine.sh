@@ -24,9 +24,6 @@ DATA_FILE_PATH=$1  # required
 [ -z "$DATA_FILE_PATH" ] && exit 1
 EXP_PATH=$2
 [ -z "$EXP_PATH" ] && EXP_PATH="exp"
-SEED=$3  # not required
-IMG_PCNT=$4  # not required
-ANN_PCNT=$5  # not required
 
 # Load Python
 module load any/python/3.8.3-conda
@@ -42,19 +39,22 @@ source env/bin/activate
 #                --hyp runs/evolve/MoNuSeg_train2021_yolov5/exp_2022-04-22_00:04:12_evolve_gen100_epoch100/hyp_evolve.yaml \
 #                --upload_data val \
 
-python train.py --img 512 \
+#runs/train/instances_train2017_yolov5/exp_test_mine_obj_pw\=0_01_obj\=1_2022-07-13_03\:32\:48/weights/best.pt
+#runs/train/MoNuSeg_train2021_yolov5/exp_2022-06-14_20:54:36_train_hyp_med_obj_pw=0_1_obj=1/weights/best.pt
+#yolov5s.pt
+python train.py --img 1024 \
                 --batch 32 \
                 --workers 4 \
                 --epochs 300 \
                 --patience 0 \
                 --image-weights \
+                --freeze 10 \
                 --cos-lr \
-                --optimizer SGD \
+                --optimizer Adam \
                 --bbox_interval 10 \
-                --weights yolov5s.pt \
+                --weights "runs/train/MoNuSeg_train2021_yolov5/exp_2022-06-14_20:54:36_train_hyp_med_obj_pw=0_1_obj=1/weights/best.pt" \
                 --hyp data/hyps/hyp.scratch-med.yaml \
-                --data "$DATA_FILE_PATH" --name "$EXP_PATH" \
-    	 	        --seed "$SEED" --images-percent "$IMG_PCNT" --annotations-percent "$ANN_PCNT"
+                --data "$DATA_FILE_PATH" --name "$EXP_PATH"
 
 echo "DONE"
 
