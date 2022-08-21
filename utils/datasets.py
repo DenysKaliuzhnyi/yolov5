@@ -33,8 +33,9 @@ from utils.torch_utils import torch_distributed_zero_first
 
 try:
     from openslide import OpenSlide
-except ImportError:
-    print('cannot import openslide module')
+except (ModuleNotFoundError, ImportError):
+    LOGGER.warning('WARNING: cannot import openslide module')
+    OpenSlide = None
     
 # Parameters
 HELP_URL = 'https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data'

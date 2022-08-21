@@ -45,6 +45,7 @@ from utils.general import (LOGGER, check_file, check_img_size, check_imshow, che
                            increment_path, non_max_suppression, print_args, scale_coords, strip_optimizer, xyxy2xywh)
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, time_sync
+from utils.wsi import assemble_annotations
 
 
 @torch.no_grad()
@@ -74,7 +75,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         hide_conf=False,  # hide confidences
         half=False,  # use FP16 half-precision inference
         dnn=False,  # use OpenCV DNN for ONNX inference
-        dataloader_type='images'
+        dataloader_type='image'
         ):
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
@@ -106,12 +107,12 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
         dataset = LoadStreams(source, img_size=imgsz, stride=stride, auto=pt)
         bs = len(dataset)  # batch_size
     else:
-        if dataloader_type == 'images':
+        if dataloader_type == 'image':
             dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt)
         elif dataloader_type == 'WSI':
             dataset = LoadWSI(source, crop_size=imgsz, stride=stride, auto=pt)
         else:
-            raise ValueError(f'dataloader_type must be one of ["images", "WSI"], got {dataloader_type}')
+            raise ValueError(f'dataloader_type must be one of ["image", "WSI"], got {dataloader_type}')
         bs = 1  # batch_size
     vid_path, vid_writer = [None] * bs, [None] * bs
 
@@ -156,7 +157,7 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
             s += '%gx%g ' % im.shape[2:]  # print string
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             imc = im0.copy() if save_crop else im0  # for save_crop
-            annotator = Annotator(im0, line_width=line_thickness, example=str(names))
+            annotator = Annotator(im0, line_width=line_thickness, example=str(names), font_size=18)
             if len(det):
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(im.shape[2:], det[:, :4], im0.shape).round()
@@ -208,6 +209,10 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
 
         # Print time (inference-only)
         LOGGER.info(f'{s}Done. ({t3 - t2:.3f}s)')
+
+    if dataloader_type == 'WSI' and save_txt:
+        LOGGER.info('Assembling crop predictions into coco-style WSI coordinate system')
+        assemble_annotations(save_dir / 'labels', imgsz)
 
     # Print results
     t = tuple(x / seen * 1E3 for x in dt)  # speeds per image
