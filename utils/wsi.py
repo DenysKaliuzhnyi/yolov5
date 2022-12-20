@@ -1,6 +1,7 @@
 import re
 import json
 import datetime
+from utils.general import LOGGER
 
 
 coco_json = {
@@ -50,7 +51,9 @@ coco_json = {
 }
 
 
-def assemble_annotations(labels_path, img_size):
+def assemble_annotations(labels_path, img_size, level=0):
+    LOGGER.warning(f'WARNING: this script assumes 0 level WSI zoom, change if required')
+
     wsi_cache = {}  # to log image id
     img_cnt = 0  # to rank image id
     ann_cnt = 0  # to rank annotation id
@@ -75,8 +78,8 @@ def assemble_annotations(labels_path, img_size):
                 "id": img_id,
                 # "license": 1,
                 "file_name": wsiname,
-                "width": img_size[0],
-                "height": img_size[1],
+                "width": 346 * 2 ** (9 - level),
+                "height": 814 * 2 ** (9 - level),
                 # "date_captured": "",
                 # "flickr_url": ""
             }
@@ -95,6 +98,8 @@ def assemble_annotations(labels_path, img_size):
                     img_size[0] * cw,
                     img_size[1] * ch)
             bbox = list(map(lambda x: int(round(x)), bbox))
+
+            cid = int(cid)
             area = bbox[2] * bbox[3]
             ann_id = ann_cnt
 
