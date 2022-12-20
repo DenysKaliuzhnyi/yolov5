@@ -48,11 +48,10 @@ python train.py --img 1024 \
                 --epochs 300 \
                 --patience 0 \
                 --image-weights \
-                --freeze 10 \
                 --cos-lr \
                 --optimizer Adam \
                 --bbox_interval 10 \
-                --weights "runs/train/MoNuSeg_train2021_yolov5/exp_2022-06-14_20:54:36_train_hyp_med_obj_pw=0_1_obj=1/weights/best.pt" \
+                --weights yolov5s.pt \
                 --hyp data/hyps/hyp.scratch-med.yaml \
                 --data "$DATA_FILE_PATH" --name "$EXP_PATH"
 
