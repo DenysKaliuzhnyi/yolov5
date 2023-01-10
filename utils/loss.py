@@ -61,8 +61,55 @@ class FocalLoss(nn.Module):
         else:  # 'none'
             return loss
 
-
 class MirrorFocalLoss(nn.Module):
+    # Wraps focal loss around existing loss_fcn(), i.e. criteria = MirrorFocalLoss(nn.BCEWithLogitsLoss(), gamma=1.5)
+    def __init__(self, loss_fcn, gamma: float = 1.5, alpha: float = 0.25, mirror_threshold: float = 0.0):
+        super().__init__()
+        assert 0 <= mirror_threshold <= 1
+        assert isinstance(loss_fcn, nn.BCEWithLogitsLoss)
+        self.loss_fcn = loss_fcn  # must be nn.BCEWithLogitsLoss()
+        self.gamma = gamma
+        self.alpha = alpha
+        self.mirror_threshold = mirror_threshold
+        self.reduction = loss_fcn.reduction
+        self.loss_fcn.reduction = 'none'  # required to apply FL to each element
+
+    def forward(self, pred, true):
+        pred_prob = torch.sigmoid(pred)  # prob from logits
+        # p_t = true * pred_prob + (1 - true) * (1 - pred_prob)
+        # modulating_factor = (1.0 - p_t) ** self.gamma
+
+        # if 0 < self.mirror_threshold < 1:
+        # invert labels for objects with high predicted probability and missing from annotation
+        bgm = true == 0
+        trm = true > 0
+        pp = pred_prob.detach().float()
+        trp = pp[trm]
+        th = torch.quantile(trp, 0.70)
+
+        # th = torch.mean(trp)
+        new = (pp > th) * bgm * pp
+        # mask = ((pred_prob > torch.quantile(pred_prob.type(torch.cuda.FloatTensor), 0.5)).detach() * (true == 0) * pred_prob).float()
+        # true = (true > 0).type(torch.cuda.FloatTensor)
+        true = true + new
+        # modulating_factor = modulating_factor + p_t ** self.gamma * mask
+
+        loss = self.loss_fcn(pred, true)
+        # loss *= modulating_factor
+
+        # if 0 < self.alpha < 1:
+        #     calculate alpha after inverting labels
+        #     alpha_factor = true * self.alpha + (1 - true) * (1 - self.alpha)
+        #     loss *= alpha_factor
+
+        if self.reduction == 'mean':
+            return loss.mean()
+        elif self.reduction == 'sum':
+            return loss.sum()
+        else:  # 'none'
+            return loss
+
+class _MirrorFocalLoss(nn.Module):
     # Wraps focal loss around existing loss_fcn(), i.e. criteria = MirrorFocalLoss(nn.BCEWithLogitsLoss(), gamma=1.5)
     def __init__(self, loss_fcn, gamma: float = 1.5, alpha: float = 0.25, mirror_threshold: float = 0.0):
         super().__init__()
