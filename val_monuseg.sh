@@ -41,9 +41,8 @@ source env/bin/activate
 
 # --iou-thres
 # ann 10%: iou 20%
-python val.py --img 1024 --batch-size 32 --workers 4 \
+python val.py --img 512 --batch-size 64 --workers 4 \
               --task "$TASK" \
-              --single-cls \
               --iou-thres "$IUO_TH" \
               --data "$DATA_FILE_PATH" --name "$EXP_PATH/$TASK/$VAL_EXP_NAME" \
               --weights "$PROJECT_HISTOPATHOLOGY_DIR/yolov5/runs/train/$EXP_PATH/weights/best.pt"
