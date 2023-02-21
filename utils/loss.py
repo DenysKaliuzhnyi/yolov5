@@ -61,6 +61,38 @@ class FocalLoss(nn.Module):
         else:  # 'none'
             return loss
 
+class TolerantFocalLoss(nn.Module):
+    def __init__(self, loss_fcn, gamma: float = 1.5, alpha: float = 0.25, quantile_threshold: float = 0.2):
+        super().__init__()
+        assert 0 <= quantile_threshold <= 1
+        assert isinstance(loss_fcn, nn.BCEWithLogitsLoss)
+        self.loss_fcn = loss_fcn  # must be nn.BCEWithLogitsLoss()
+        self.gamma = gamma
+        self.alpha = alpha
+        self.quantile_threshold = quantile_threshold
+        self.reduction = loss_fcn.reduction
+        self.loss_fcn.reduction = 'none'  # required to apply FL to each element
+
+    def forward(self, pred, true):
+        self.counter += 1
+
+        bgm = true == 0
+        trm = true > 0
+        pp = torch.sigmoid(pred).detach().float()
+        trp = pp[trm].clone()
+        th = torch.quantile(trp, self.quantile_threshold)
+        new = (pp > th) * bgm * pp
+        true = true + new
+
+        loss = self.loss_fcn(pred, true)
+
+        if self.reduction == 'mean':
+            return loss.mean()
+        elif self.reduction == 'sum':
+            return loss.sum()
+        else:  # 'none'
+            return loss
+
 
 class QFocalLoss(nn.Module):
     # Wraps Quality focal loss around existing loss_fcn(), i.e. criteria = FocalLoss(nn.BCEWithLogitsLoss(), gamma=1.5)
