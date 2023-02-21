@@ -74,8 +74,6 @@ class TolerantFocalLoss(nn.Module):
         self.loss_fcn.reduction = 'none'  # required to apply FL to each element
 
     def forward(self, pred, true):
-        self.counter += 1
-
         bgm = true == 0
         trm = true > 0
         pp = torch.sigmoid(pred).detach().float()
