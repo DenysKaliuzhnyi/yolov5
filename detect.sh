@@ -1,6 +1,6 @@
 #!/bin/bash
 # The name of the job is
-#SBATCH -J train_monuseg
+#SBATCH -J detect
 
 # Format of the output filename
 #SBATCH -o slurm-out/slurm-%j.out
