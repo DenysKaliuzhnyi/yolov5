@@ -44,6 +44,7 @@ source env/bin/activate
 python val.py --img 512 --batch-size 64 --workers 4 \
               --task "$TASK" \
               --iou-thres "$IUO_TH" \
+              --exist-ok \
               --data "$DATA_FILE_PATH" --name "$EXP_PATH/$TASK/$VAL_EXP_NAME" \
               --weights "$PROJECT_HISTOPATHOLOGY_DIR/yolov5/runs/train/$EXP_PATH/weights/best.pt"
 
