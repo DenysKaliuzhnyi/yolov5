@@ -24,10 +24,18 @@ DATA_FILE_PATH=$1  # required
 [ -z "$DATA_FILE_PATH" ] && exit 1
 IMAGES_PATH=$2  # required
 [ -z "$IMAGES_PATH" ] && exit 1
-EXP_PATH=$3
+TASK=$3
+[ -z "$TASK" ] && TASK="val"
+
+EXP_PATH=$4
 [ -z "$EXP_PATH" ] && EXP_PATH="exp"
-IOU=$4
-CONF=$5
+DET_EXP_NAME=$5
+[ -z "$DET_EXP_NAME" ] && DET_EXP_NAME="exp"
+
+IUO_TH=$6
+[ -z "$IUO_TH" ] && IUO_TH=0.45
+CONF_TH=$7
+[ -z "$CONF_TH" ] && CONF_TH=0.25
 
 
 # Load Python
@@ -40,7 +48,7 @@ python detect.py --img 512 \
                  --line-thickness 1 \
                  --hide-labels --hide-conf \
                  --save-txt --save-conf \
-                 --data "$DATA_FILE_PATH" --name "$EXP_PATH" --source "$IMAGES_PATH" \
+                 --data "$DATA_FILE_PATH" --name "$EXP_PATH/$TASK/$DET_EXP_NAME" --source "$IMAGES_PATH/$TASK" \
                  --weights "$PROJECT_HISTOPATHOLOGY_DIR/yolov5/runs/train/$EXP_PATH/weights/best.pt" \
                  --conf-thres "$CONF" --iou-thres "$IOU"
 echo "DONE"
