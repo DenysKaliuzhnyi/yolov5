@@ -44,6 +44,7 @@ source env/bin/activate
 
 python train.py --img 512 \
                 --batch 32 \
+                --exist-ok \
                 --workers 4 \
                 --epochs 300 \
                 --patience 0 \
