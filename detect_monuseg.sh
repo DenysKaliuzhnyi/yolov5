@@ -50,5 +50,5 @@ python detect.py --img 512 \
                  --save-txt --save-conf \
                  --data "$DATA_FILE_PATH" --name "$EXP_PATH/$TASK/$DET_EXP_NAME" --source "$IMAGES_PATH/$TASK" \
                  --weights "$PROJECT_HISTOPATHOLOGY_DIR/yolov5/runs/train/$EXP_PATH/weights/best.pt" \
-                 --conf-thres "$CONF" --iou-thres "$IOU"
+                 --conf-thres "$CONF_TH" --iou-thres "$IUO_TH"
 echo "DONE"
