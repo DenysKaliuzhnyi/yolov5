@@ -102,8 +102,9 @@ class Loggers():
 
     def on_val_image_end(self, pred, predn, path, names, im):
         # Callback runs on val image end
-        if self.wandb:
-            self.wandb.val_one_image(pred, predn, path, names, im)
+        pass
+        # if self.wandb:
+        #     self.wandb.val_one_image(pred, predn, path, names, im)
 
     def on_val_end(self):
         # Callback runs on val end
