@@ -313,6 +313,11 @@ def run(data,
     maps = np.zeros(nc) + map
     for i, c in enumerate(ap_class):
         maps[c] = ap[i]
+
+    # save map value
+    with open(save_dir / 'map.txt', 'w') as fw:
+        fw.write(str(map50) + ' ' + str(map))
+
     return (mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps, t
 
 
