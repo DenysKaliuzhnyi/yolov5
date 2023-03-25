@@ -318,6 +318,10 @@ def run(data,
     with open(save_dir / 'map.txt', 'w') as fw:
         fw.write(str(map50) + ' ' + str(map))
 
+    # save F1 value
+    with open(save_dir / 'f1.txt', 'w') as fw:
+        fw.write(str(f1[0]))
+
     return (mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps, t
 
 
