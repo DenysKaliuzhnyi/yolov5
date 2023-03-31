@@ -320,7 +320,7 @@ def run(data,
 
     # save F1 value
     with open(save_dir / 'f1.txt', 'w') as fw:
-        fw.write(str(f1[0]))
+        fw.write(str(f1))
 
     return (mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps, t
 
