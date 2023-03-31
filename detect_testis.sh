@@ -1,6 +1,6 @@
 #!/bin/bash
 # The name of the job is
-#SBATCH -J detect
+#SBATCH -J train_testis
 
 # Format of the output filename
 #SBATCH -o slurm-out/slurm-%j.out
@@ -56,16 +56,11 @@ source env/bin/activate
 #--conf-thres 0.09209
 
 python detect.py --img 1024 \
-                 --nosave \
                  --agnostic-nms \
                  --line-thickness 1 \
-                 --conf-thres $CONF_TH \
-                 --iou-thres $IUO_TH \
                  --hide-labels --hide-conf \
                  --save-txt --save-conf \
-                 --data "$DATA_FILE_PATH" \
-                 --source "$IMAGES_PATH/$TASK" \
-                 --name "$EXP_PATH/$TASK/$DET_EXP_NAME" \
-                 --weights "$PROJECT_HISTOPATHOLOGY_DIR/yolov5/runs/train/$EXP_PATH/weights/best.pt"
-
+                 --data "$DATA_FILE_PATH" --name "$EXP_PATH/$TASK/$DET_EXP_NAME" --source "$IMAGES_PATH/$TASK" \
+                 --weights "$PROJECT_HISTOPATHOLOGY_DIR/yolov5/runs/train/$EXP_PATH/weights/best.pt" \
+                 --conf-thres "$CONF_TH" --iou-thres "$IUO_TH"
 echo "DONE"
