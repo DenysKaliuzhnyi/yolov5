@@ -73,22 +73,24 @@ class TolerantFocalLoss(nn.Module):
         self.reduction = loss_fcn.reduction
         self.loss_fcn.reduction = 'none'  # required to apply FL to each element
         self.ema_conf = None
-        self.ema_alpha = 0.99
+        self.ema_alpha = 0.9
 
     def forward(self, pred, true):
         bgm = true == 0
         trm = true > 0
         pp = torch.sigmoid(pred).detach().float()
         trp = pp[trm].clone()
-        th = torch.quantile(trp, self.quantile_threshold)
 
-        if self.ema_conf is None:
-            self.ema_conf = th
-        else:
-            self.ema_conf = self.ema_alpha * self.ema_conf + (1 - self.ema_alpha) * th
+        if trp.numel() > 0:
+            th = torch.quantile(trp, self.quantile_threshold)
 
-        new = (pp > self.ema_conf) * bgm * pp
-        true = true + new
+            if self.ema_conf is None:
+                self.ema_conf = th
+            else:
+                self.ema_conf = self.ema_alpha * self.ema_conf + (1 - self.ema_alpha) * th
+
+            new = (pp > self.ema_conf) * bgm * pp
+            true = true + new
 
         loss = self.loss_fcn(pred, true)
 
