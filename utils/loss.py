@@ -76,9 +76,11 @@ class TolerantFocalLoss(nn.Module):
         self.ema_alpha = 0.9
 
     def forward(self, pred, true):
+        pred_prob = torch.sigmoid(pred)
+
         bgm = true == 0
         trm = true > 0
-        pp = torch.sigmoid(pred).detach().float()
+        pp = pred_prob.detach().float()
         trp = pp[trm].clone()
 
         if trp.numel() > 0:
@@ -93,6 +95,10 @@ class TolerantFocalLoss(nn.Module):
             true = true + new
 
         loss = self.loss_fcn(pred, true)
+        p_t = true * pred_prob + (1 - true) * (1 - pred_prob)
+        alpha_factor = true * self.alpha + (1 - true) * (1 - self.alpha)
+        modulating_factor = (1.0 - p_t) ** self.gamma
+        loss *= alpha_factor * modulating_factor
 
         if self.reduction == 'mean':
             return loss.mean()
