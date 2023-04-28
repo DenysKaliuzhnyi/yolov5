@@ -47,8 +47,6 @@ python train.py --img 512 \
                 --exist-ok \
                 --epochs 300 \
                 --patience 0 \
-                --image-weights \
-                --cos-lr \
                 --optimizer SGD \
                 --bbox_interval 10 \
                 --weights yolov5s.pt \
