@@ -61,44 +61,51 @@ class FocalLoss(nn.Module):
         else:  # 'none'
             return loss
 
-class TolerantFocalLoss(nn.Module):
-    def __init__(self, loss_fcn, gamma: float = 1.5, alpha: float = 0.25, quantile_threshold: float = 0.2):
+class GBRLoss(nn.Module):
+    def __init__(self, loss_fcn, gamma: float = 1.5, alpha: float = 0.25):
         super().__init__()
-        assert 0 <= quantile_threshold <= 1
         assert isinstance(loss_fcn, nn.BCEWithLogitsLoss)
         self.loss_fcn = loss_fcn  # must be nn.BCEWithLogitsLoss()
         self.gamma = gamma
         self.alpha = alpha
-        self.quantile_threshold = quantile_threshold
         self.reduction = loss_fcn.reduction
         self.loss_fcn.reduction = 'none'  # required to apply FL to each element
-        self.ema_conf = None
-        self.ema_alpha = 0.9
 
     def forward(self, pred, true):
         pred_prob = torch.sigmoid(pred)
-
         bgm = true == 0
         trm = true > 0
         pp = pred_prob.detach().float()
-        trp = pp[trm].clone()
+        thr = ((1 - pp) >= 0.3)
+        pred_prob = torch.clip(pred_prob, 1e-7, 1 - 1e-7)
 
-        if trp.numel() > 0:
-            th = torch.quantile(trp, self.quantile_threshold)
+        # train_testCustomLossClipAlphaFlipShouldBeSameTH0p3
+        # loss = -(
+        #         (true * torch.log(pred_prob) + 0.1 * (1 - true) * torch.log(1 - pred_prob)) * (
+        #             1. * (trm | (bgm & thr))) +
+        #         (true * torch.log(1 - pred_prob) + (1 - true) * torch.log(pred_prob)) * (
+        #             1. * (bgm * (1 - 1 * thr)))
+        # )
 
-            if self.ema_conf is None:
-                self.ema_conf = th
-            else:
-                self.ema_conf = self.ema_alpha * self.ema_conf + (1 - self.ema_alpha) * th
+        # train_testCustomLoss_3BranchSlit_W1_0p1_0p1
+        loss = -(
+                (0.1 * true * torch.log(pred_prob) + (1 - true) * torch.log(1 - pred_prob)) * (
+                        1. * trm) +
+          0.1 * (true * torch.log(pred_prob) + (1 - true) * torch.log(1 - pred_prob)) * (
+                        1. * (bgm & thr)) +
+                (true * torch.log(1 - pred_prob) + (1 - true) * torch.log(pred_prob)) * (
+                        1. * (bgm * (1 - 1 * thr)))
+        )
 
-            new = (pp > self.ema_conf) * bgm * pp
-            true = true + new
-
-        loss = self.loss_fcn(pred, true)
-        p_t = true * pred_prob + (1 - true) * (1 - pred_prob)
-        alpha_factor = true * self.alpha + (1 - true) * (1 - self.alpha)
-        modulating_factor = (1.0 - p_t) ** self.gamma
-        loss *= alpha_factor * modulating_factor
+        # train_testCustomLossClipAlphaFlipShouldBeSameTH0p3_gamma2
+        # loss = -(
+        #         (true * (1 - pred_prob) * (1 - pred_prob) * torch.log(pred_prob) + (1 - true) * pred_prob * pred_prob * torch.log(1 - pred_prob)) * (
+        #                 1. * trm) +
+        #         0.1 * (true * (1 - pred_prob) * (1 - pred_prob) * torch.log(pred_prob) + (1 - true) * pred_prob * pred_prob * torch.log(1 - pred_prob)) * (
+        #                 1. * (bgm & thr)) +
+        #         0.1 * (true * pred_prob * pred_prob * torch.log(1 - pred_prob) + (1 - true) * (1 - pred_prob) * (1 - pred_prob) * torch.log(pred_prob)) * (
+        #                 1. * (bgm * (1 - 1 * thr)))
+        # )
 
         if self.reduction == 'mean':
             return loss.mean()
@@ -143,8 +150,8 @@ class ComputeLoss:
 
         # Define criteria
         BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], device=device))
-        BCEobj = TolerantFocalLoss(nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device)),
-                                   gamma=h['fl_gamma'], alpha=h['fl_alpha'], quantile_threshold=h['quantile_threshold'])
+        BCEobj = GBRLoss(nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device)),
+                                   gamma=h['fl_gamma'], alpha=h['fl_alpha'])
 
         # Class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
         self.cp, self.cn = smooth_BCE(eps=h.get('label_smoothing', 0.0))  # positive, negative BCE targets
