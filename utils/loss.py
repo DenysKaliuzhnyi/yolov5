@@ -89,11 +89,11 @@ class GBRLoss(nn.Module):
 
         # train_testCustomLoss_3BranchSlit_W1_0p1_0p1
         loss = -(
-                (0.1 * true * torch.log(pred_prob) + (1 - true) * torch.log(1 - pred_prob)) * (
+                (0.1 * true * torch.log(pred_prob) + (1 - true) * torch.log(1 - pred_prob)) * (  # positive branch
                         1. * trm) +
-          0.1 * (true * torch.log(pred_prob) + (1 - true) * torch.log(1 - pred_prob)) * (
+          0.1 * (true * torch.log(pred_prob) + (1 - true) * torch.log(1 - pred_prob)) * (  # easy negative branch
                         1. * (bgm & thr)) +
-                (true * torch.log(1 - pred_prob) + (1 - true) * torch.log(pred_prob)) * (
+                (true * torch.log(1 - pred_prob) + (1 - true) * torch.log(pred_prob)) * (  # hard negative branch (mirrored positive)
                         1. * (bgm * (1 - 1 * thr)))
         )
 
