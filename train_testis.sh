@@ -45,12 +45,8 @@ source env/bin/activate
 python train.py --img 1024 \
                 --batch 32 \
                 --exist-ok \
-                --workers 4 \
                 --epochs 300 \
                 --patience 0 \
-                --image-weights \
-                --cos-lr \
-                --optimizer Adam \
                 --bbox_interval 10 \
                 --weights yolov5s.pt \
                 --hyp data/hyps/hyp.scratch-testis.yaml \
