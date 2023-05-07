@@ -49,7 +49,7 @@ python train.py --img 1024 \
                 --patience 0 \
                 --bbox_interval 10 \
                 --weights yolov5s.pt \
-                --hyp data/hyps/hyp.scratch-testis.yaml \
+                --hyp data/hyps/hyp.scratch-med.yaml \
                 --data "$DATA_FILE_PATH" --name "$EXP_PATH"
 
 echo "DONE"
