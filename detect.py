@@ -89,11 +89,11 @@ def run(weights=ROOT / 'yolov5s.pt',  # model.pt path(s)
     save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
     (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
-    if '/test/' in name:
-        conf_file = Path(ROOT / 'runs/val' / name).parents[1] / f'test/iou={int(iou_thres*100)}/f1.txt'
-        with open(conf_file, 'r') as fr:
-            conf_thres = float(fr.read().strip())
-            LOGGER.info(f'Overwriting confidence threshold value with best F-1 score obtained on val set: {conf_file}')
+    # if '/test/' in name:
+    #     conf_file = Path(ROOT / 'runs/val' / name).parents[1] / f'test/iou={int(iou_thres*100)}/f1.txt'
+    #     with open(conf_file, 'r') as fr:
+    #         conf_thres = float(fr.read().strip())
+    #         LOGGER.info(f'Overwriting confidence threshold value with best F-1 score obtained on val set: {conf_file}')
 
     # Load model
     device = select_device(device)
