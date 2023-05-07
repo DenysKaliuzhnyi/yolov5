@@ -163,6 +163,7 @@ class WandbLogger():
                                         name=opt.name if opt.name != 'exp' else None,
                                         job_type=job_type,
                                         id=run_id,
+                                        settings=wandb.Settings(start_method='thread'),
                                         allow_val_change=True) if not wandb.run else wandb.run
         if self.wandb_run:
             if self.job_type == 'Training':
