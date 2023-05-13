@@ -62,50 +62,28 @@ class FocalLoss(nn.Module):
             return loss
 
 class GBRLoss(nn.Module):
-    def __init__(self, loss_fcn, gamma: float = 1.5, alpha: float = 0.25):
+    def __init__(self, reduction):
         super().__init__()
-        assert isinstance(loss_fcn, nn.BCEWithLogitsLoss)
-        self.loss_fcn = loss_fcn  # must be nn.BCEWithLogitsLoss()
-        self.gamma = gamma
-        self.alpha = alpha
-        self.reduction = loss_fcn.reduction
-        self.loss_fcn.reduction = 'none'  # required to apply FL to each element
+        self.reduction = reduction
+        self.t = 0.3  # IoU mirroring threshold
+        self.a = 0.1  # alpha weight
 
     def forward(self, pred, true):
         pred_prob = torch.sigmoid(pred)
-        bgm = true == 0
-        trm = true > 0
+        bgm = true == 0  # negative bench
+        trm = true > 0  # positive branch
         pp = pred_prob.detach().float()
-        thr = ((1 - pp) >= 0.3)
+        thr = ((1 - pp) >= self.t)
         pred_prob = torch.clip(pred_prob, 1e-7, 1 - 1e-7)
 
-        # train_testCustomLossClipAlphaFlipShouldBeSameTH0p3
-        # loss = -(
-        #         (true * torch.log(pred_prob) + 0.1 * (1 - true) * torch.log(1 - pred_prob)) * (
-        #             1. * (trm | (bgm & thr))) +
-        #         (true * torch.log(1 - pred_prob) + (1 - true) * torch.log(pred_prob)) * (
-        #             1. * (bgm * (1 - 1 * thr)))
-        # )
-
-        # train_testCustomLoss_3BranchSlit_W1_0p1_0p1
         loss = -(
-                (0.1 * true * torch.log(pred_prob) + (1 - true) * torch.log(1 - pred_prob)) * (  # positive branch
+                (self.a * true * torch.log(pred_prob) + (1 - true) * torch.log(1 - pred_prob)) * (  # positive branch
                         1. * trm) +
-          0.1 * (true * torch.log(pred_prob) + (1 - true) * torch.log(1 - pred_prob)) * (  # easy negative branch
+                (true * torch.log(pred_prob) + (1 - true) * torch.log(1 - pred_prob)) * (  # easy negative branch
                         1. * (bgm & thr)) +
                 (true * torch.log(1 - pred_prob) + (1 - true) * torch.log(pred_prob)) * (  # hard negative branch (mirrored positive)
                         1. * (bgm * (1 - 1 * thr)))
         )
-
-        # train_testCustomLossClipAlphaFlipShouldBeSameTH0p3_gamma2
-        # loss = -(
-        #         (true * (1 - pred_prob) * (1 - pred_prob) * torch.log(pred_prob) + (1 - true) * pred_prob * pred_prob * torch.log(1 - pred_prob)) * (
-        #                 1. * trm) +
-        #         0.1 * (true * (1 - pred_prob) * (1 - pred_prob) * torch.log(pred_prob) + (1 - true) * pred_prob * pred_prob * torch.log(1 - pred_prob)) * (
-        #                 1. * (bgm & thr)) +
-        #         0.1 * (true * pred_prob * pred_prob * torch.log(1 - pred_prob) + (1 - true) * (1 - pred_prob) * (1 - pred_prob) * torch.log(pred_prob)) * (
-        #                 1. * (bgm * (1 - 1 * thr)))
-        # )
 
         if self.reduction == 'mean':
             return loss.mean()
@@ -150,8 +128,7 @@ class ComputeLoss:
 
         # Define criteria
         BCEcls = nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['cls_pw']], device=device))
-        BCEobj = GBRLoss(nn.BCEWithLogitsLoss(pos_weight=torch.tensor([h['obj_pw']], device=device)),
-                                   gamma=h['fl_gamma'], alpha=h['fl_alpha'])
+        BCEobj = GBRLoss(reduction=BCEcls.reduction)
 
         # Class label smoothing https://arxiv.org/pdf/1902.04103.pdf eqn 3
         self.cp, self.cn = smooth_BCE(eps=h.get('label_smoothing', 0.0))  # positive, negative BCE targets
