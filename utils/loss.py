@@ -79,7 +79,7 @@ class GBRLoss(nn.Module):
         loss = -(
                 (self.a * true * torch.log(pred_prob) + (1 - true) * torch.log(1 - pred_prob)) * (  # positive branch
                         1. * trm) +
-                (true * torch.log(pred_prob) + (1 - true) * torch.log(1 - pred_prob)) * (  # easy negative branch
+       self.a * (true * torch.log(pred_prob) + (1 - true) * torch.log(1 - pred_prob)) * (  # easy negative branch
                         1. * (bgm & thr)) +
                 (true * torch.log(1 - pred_prob) + (1 - true) * torch.log(pred_prob)) * (  # hard negative branch (mirrored positive)
                         1. * (bgm * (1 - 1 * thr)))
